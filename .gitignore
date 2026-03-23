@@ -1,0 +1,44 @@
+# PlatformIO core directories
+.pio/
+.pioenvs/
+.piolibdeps/
+.piodeps/
+
+# Build output
+build/
+*.elf
+*.bin
+*.hex
+
+# VS Code settings (optional – keep if sharing workspace config)
+.vscode/
+
+# macOS / Linux / Windows system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python cache (PlatformIO uses Python internally)
+__pycache__/
+*.pyc
+
+# Environment variables / secrets
+.env
+
+# Upload artifacts
+firmware.bin
+firmware.elf
+
+# C/C++ compiled objects
+*.o
+*.a
+
+# Backup files
+*~
+*.bak
