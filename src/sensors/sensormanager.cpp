@@ -46,12 +46,8 @@ float SensorManager::readTurbidity(int &turbidityPin)
     // Read raw ADC value
     int raw = analogRead(turbidityPin);
 
-    Serial.println("Raw ADC: " + String(raw));
-
     // Convert to voltage (assuming 3.1V reference and 12-bit)
     float rawVoltage = raw * (3.1 / 4095.0);
-    Serial.print("Raw Voltage: ");
-    Serial.println(rawVoltage);
 
     // Correct scaling (important!)
     float voltage = rawVoltage * (3.7 / 3.1);
