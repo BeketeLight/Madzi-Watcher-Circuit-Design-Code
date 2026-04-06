@@ -22,6 +22,11 @@ extern const unsigned long PUBLISH_INTERVAL_MS;
 // ====================== Hardware ======================
 extern const int SOLENOID_PIN;
 extern const int BUZZER_PIN;
+extern const int STATUS_LED_PIN;
+extern int TURBIDITY_SENSOR_PIN;
+extern const int PH_SENSOR_PIN;
+extern const int TDS_SENSOR_PIN;
+extern const int TEMP_SENSOR_PIN;
 
 // ====================== Thresholds ======================
 extern const float PH_MIN;
@@ -29,5 +34,7 @@ extern const float PH_MAX;
 extern const float TURBIDITY_MAX;
 extern const int TDS_MAX;
 extern const int EC_MAX;
+extern const float DIVIDER_SCALE;
+extern const float TURBIDITY_K; // Calibration constant for turbidity sensor (to be determined experimentally)
 
 #endif

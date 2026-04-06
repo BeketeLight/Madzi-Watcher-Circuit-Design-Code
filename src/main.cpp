@@ -39,6 +39,7 @@ void setup()
     buzzer.begin();
     buzzer.beep(200, 1500); // startup beep
     valve.begin();
+    sensors.begin();
 
     // Create queue (buffer up to 5 readings if network is slow/offline)
     readingQueue = xQueueCreate(5, sizeof(WaterQualityReading));
@@ -105,6 +106,8 @@ static void sensorTask(void *pvParameters)
 
     while (true)
     {
+        Serial.println("\nReading sensors...");
+
         // Read all sensors
         WaterQualityReading reading = sensors.readAll();
 

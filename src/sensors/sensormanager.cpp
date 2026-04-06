@@ -1,15 +1,23 @@
 #include "sensormanager.h"
 
 SensorManager::SensorManager()
+    : oneWire(tempPinDS18B20),
+      sensors(&oneWire)
 {
     randomSeed(millis());
 }
 
-// void SensorManager::begin()
-// {
-//     // Replace analogReadResolution/Attenuation with this:
-//     pinMode(turbidityPin, INPUT);
-// }
+void SensorManager::begin()
+{
+    // DS18B20 setup
+    sensors.begin();
+
+    // Optional: Set resolution (9-12 bits). Higher = more accurate but slower
+    sensors.setResolution(12);
+
+    // You can add other sensor initializations here (e.g. calibration, etc.)
+    Serial.println("SensorManager initialized. DS18B20 ready.");
+}
 
 WaterQualityReading SensorManager::readAll()
 {
@@ -36,34 +44,41 @@ WaterQualityReading SensorManager::readAll()
 
 float SensorManager::readTurbidity(int &turbidityPin)
 {
-    // Set ADC resolution to 12 bits (0–4095)
-    analogReadResolution(12);
+    // // Set ADC resolution to 12 bits (0–4095)
+    // analogReadResolution(12);
 
-    // Set attenuation for ~0–3.3V full range (recommended for most sensors)
-    // Options: ADC_0db (~1.1V), ADC_2_5db, ADC_6db, ADC_11db (~3.3V)
-    analogSetAttenuation(ADC_11db);
+    // // Set attenuation for ~0–3.3V full range (recommended for most sensors)
+    // // Options: ADC_0db (~1.1V), ADC_2_5db, ADC_6db, ADC_11db (~3.3V)
+    // analogSetAttenuation(ADC_11db);
 
-    // Read raw ADC value
-    int raw = analogRead(turbidityPin);
+    // // Read raw ADC value
+    // int raw = analogRead(turbidityPin);
+    float temperature = readTemperature(); // Get current temperature for compensation
 
-    // Convert to voltage (assuming 3.1V reference and 12-bit)
-    float rawVoltage = raw * (3.1 / 4095.0);
+    uint32_t mV_at_pin = analogReadMilliVolts(turbidityPin); // already calibrated!
+    float voltage_at_pin = mV_at_pin / 1000.0;               // e.g. 0.000 – 3.300 V
 
-    // Correct scaling (important!)
-    float voltage = rawVoltage * (3.7 / 3.1);
+    // Recover the REAL sensor output voltage (0–5 V)
+    float U_measured = voltage_at_pin * DIVIDER_SCALE;
+
+    // === Temperature compensation + official TZT formula ===
+    float deltaU = -0.0192 * (temperature - 25.0);
+    float U_corrected = U_measured - deltaU;
+
+    // equivalent NTU
+    float TU = -865.68 * U_corrected + TURBIDITY_K;
+
     Serial.print("Corrected Voltage: ");
-    Serial.println(voltage);
+    Serial.println(U_corrected);
 
-    // Convert to NTU
-    float turbidity = (-54.7 * voltage) + 203.0; // Example linear conversion (calibrate with your sensor)
     Serial.print("Equivalent turbidity: ");
-    Serial.println(turbidity);
 
     // Clamp values
-    if (turbidity < 0)
-        turbidity = 0;
+    if (TU < 0)
+        TU = 0;
+    Serial.println(TU);
 
-    return turbidity;
+    return TU;
 }
 float SensorManager::readPH(int &pHPin)
 {
@@ -76,6 +91,21 @@ int SensorManager::readTDS(int &tdsPin)
 float SensorManager::readEC(int &ecPin)
 {
     return analogRead(ecPin) / 10.0;
+}
+
+// Read temperature from DS18B20 (returns °C)
+float SensorManager::readTemperature()
+{
+    sensors.requestTemperatures();            // Send command to all sensors on the bus
+    float tempC = sensors.getTempCByIndex(0); // Get temperature from first (and usually only) sensor
+
+    if (tempC == DEVICE_DISCONNECTED_C)
+    {
+        Serial.println("Error: DS18B20 sensor not found or disconnected!");
+        return -127.0; // Common error value
+    }
+
+    return tempC;
 }
 
 // ==================== WQI CALCULATION BASED ON BIS 10500:2012 METHODOLOGY ====================
