@@ -54,6 +54,8 @@ float SensorManager::readTurbidity(int &turbidityPin)
     // // Read raw ADC value
     // int raw = analogRead(turbidityPin);
     float temperature = readTemperature(); // Get current temperature for compensation
+    Serial.print("Raw temperature reading (mV): ");
+    Serial.println(temperature);
 
     uint32_t mV_at_pin = analogReadMilliVolts(turbidityPin); // already calibrated!
     float voltage_at_pin = mV_at_pin / 1000.0;               // e.g. 0.000 – 3.300 V

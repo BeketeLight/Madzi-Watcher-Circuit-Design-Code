@@ -30,7 +30,7 @@ static void networkTask(void *pvParameters);
 void setup()
 {
     Serial.begin(115200);
-    delay(500); // give serial time to settle
+    delay(1000); // give serial time to settle
 
     Serial.println("\n=== Madzi Watcher starting ===\n");
 
@@ -156,6 +156,7 @@ static void networkTask(void *pvParameters)
                     Serial.println("→ Published reading to MQTT");
                 }
                 else
+
                 {
                     Serial.println("Publish failed (will retry next cycle)");
                     // Optional: re-queue if you want guaranteed delivery (but be careful with memory)
