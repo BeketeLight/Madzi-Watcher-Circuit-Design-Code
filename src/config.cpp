@@ -23,6 +23,13 @@ const int PH_SENSOR_PIN = 5;   // ADC1_4
 const int TDS_SENSOR_PIN = 6;  // ADC1_5
 const int TEMP_SENSOR_PIN = 7; // ADC1_6
 
+// =========EMAILS =========
+const char *SMTP_HOST = "smtp.gmail.com";
+const int SMTP_PORT = 465;                                    // 465 for SSL, 587 for STARTTLS
+const char *SMTP_USER = "beketelight15@gmail.com";            // Your email address
+const char *SMTP_PASS = "kyiu maiw tofl udxr";                // Your 16-character App Password
+const char *RECIPIENT_EMAIL = "bsc-com-ne-07-21@unima.ac.mw"; // Recipient email address
+
 // ====================== Thresholds ======================
 const float PH_MIN = 6.5;
 const float PH_MAX = 8.5;

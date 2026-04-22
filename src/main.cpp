@@ -36,6 +36,7 @@ void setup()
 
     // Initialize hardware & classes
     initStatusLED();
+    mqttManager.begin();
     buzzer.begin();
     buzzer.beep(200, 1500); // startup beep
     valve.begin();

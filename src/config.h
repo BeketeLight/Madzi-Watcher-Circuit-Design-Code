@@ -28,6 +28,13 @@ extern const int PH_SENSOR_PIN;
 extern const int TDS_SENSOR_PIN;
 extern const int TEMP_SENSOR_PIN;
 
+// =========EMAILS =========
+extern const char *SMTP_HOST;
+extern const int SMTP_PORT;
+extern const char *SMTP_USER;
+extern const char *SMTP_PASS;
+extern const char *RECIPIENT_EMAIL;
+
 // ====================== Thresholds ======================
 extern const float PH_MIN;
 extern const float PH_MAX;

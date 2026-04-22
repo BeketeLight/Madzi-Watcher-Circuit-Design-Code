@@ -28,8 +28,51 @@ bool MqttManager::begin()
     client.setBufferSize(512); // increase if your JSON is large
 
     client.setBufferSize(512);
+    client.setCallback(MqttManager::staticCallback);
 
     return tryConnect();
+}
+
+bool MqttManager::subscribe(const char *topic, uint8_t qos)
+{
+    if (!client.connected())
+    {
+        Serial.println("Cannot subscribe – MQTT not connected");
+        return false;
+    }
+
+    bool success = (qos == 0) ? client.subscribe(topic) : client.subscribe(topic, qos);
+
+    if (success)
+    {
+        Serial.printf("Subscribed to topic '%s' (QoS %d) ✓\n", topic, qos);
+        return true;
+    }
+    else
+    {
+        Serial.printf("Failed to subscribe to topic '%s' → rc=%d\n", topic, client.state());
+        return false;
+    }
+}
+
+void (*MqttManager::messageCallback)(const char *topic, const uint8_t *payload, size_t len) = nullptr;
+
+// Static forwarding callback (required because PubSubClient expects a free function / matching signature)
+void MqttManager::staticCallback(char *topic, uint8_t *payload, unsigned int length)
+{
+    if (messageCallback)
+    {
+        messageCallback(topic, payload, length); // length is unsigned int → safe to pass to size_t
+    }
+    else
+    {
+        Serial.println("Received MQTT message but no messageCallback set");
+    }
+}
+
+void MqttManager::setMessageCallback(void (*cb)(const char *topic, const uint8_t *payload, size_t len))
+{
+    messageCallback = cb;
 }
 
 void MqttManager::loop()

@@ -1,6 +1,9 @@
 #include "waterqualitycontroller.h"
 
-WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(valve) {}
+WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(valve)
+{
+    emailManager.begin();
+}
 
 void WaterQualityController::process(const WaterQualityReading &reading, Buzzer &buzzer)
 {
@@ -19,8 +22,14 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
         {
             _valve.close();
             valveClosed = true;
+            if (emailsendCount == 0 || emailsendCount == 10)
+            {
+                emailsendCount++;
+                emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
+            }
+            emailsendCount++;
 
-            buzzer.alert(); // Sound alarm on anomaly
+            // buzzer.alert(); // Sound alarm on anomaly
 
             updateStatusLED(violation);
             Serial.println("ANOMALY DETECTED → Valve CLOSED");
@@ -30,6 +39,7 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
     {
         normalCount++;
         anomalyCount = 0;
+        emailsendCount = 0;
 
         // Reopen only after 5 consecutive NORMAL readings
         if (normalCount >= 5 && valveClosed)

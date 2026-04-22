@@ -16,6 +16,8 @@ public:
     bool begin();
     void loop(); // call frequently from network task
     bool publish(const WaterQualityReading &data);
+    bool subscribe(const char *topic, uint8_t qos = 0);
+    void callback(const char *topic, const uint8_t *payload, size_t len);
 
 private:
     WiFiClient espClient; // secure client for port 8883
@@ -25,6 +27,9 @@ private:
     unsigned long reconnectBackoffMs = 5000; // starts at 5 s
     int connectFailCount = 0;
     static const unsigned long MAX_BACKOFF_MS = 120000; // 2 minutes max
+    static void staticCallback(char *topic, uint8_t *payload, unsigned int length);
+    void setMessageCallback(void (*cb)(const char *topic, const uint8_t *payload, size_t len));
+    static void (*messageCallback)(const char *topic, const uint8_t *payload, size_t len);
 
     bool tryConnect();
     bool isReallyConnected(); // more reliable check
