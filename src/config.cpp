@@ -10,6 +10,10 @@ const int MQTT_PORT = 1883;                // 8883;
 const char *MQTT_USER = "madziwatcher";
 const char *MQTT_PASS = "madziWatcher001";
 const char *MQTT_TOPIC_SENSOR = "waterquality/sensor";
+const char *MQTT_TOPIC_COMMANDS = "waterquality/commands";
+const char *MQTT_TOPIC_STATUS = "waterquality/status";
+const char *MQTT_TOPIC_CONFIG = "waterquality/config";
+const int MQTT_QOS = 1; // QoS level for publishing (0, 1, or 2)
 
 // ====================== Timing ======================
 const unsigned long PUBLISH_INTERVAL_MS = 5000;

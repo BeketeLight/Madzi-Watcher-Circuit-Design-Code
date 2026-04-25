@@ -12,12 +12,13 @@ class MqttManager
 public:
     MqttManager();
     ~MqttManager();
+    typedef std::function<void(const String &, const String &)> MessageHandler;
 
     bool begin();
     void loop(); // call frequently from network task
     bool publish(const WaterQualityReading &data);
     bool subscribe(const char *topic, uint8_t qos = 0);
-    void callback(const char *topic, const uint8_t *payload, size_t len);
+    void setMessageHandler(MessageHandler handler);
 
 private:
     WiFiClient espClient; // secure client for port 8883
@@ -30,6 +31,7 @@ private:
     static void staticCallback(char *topic, uint8_t *payload, unsigned int length);
     void setMessageCallback(void (*cb)(const char *topic, const uint8_t *payload, size_t len));
     static void (*messageCallback)(const char *topic, const uint8_t *payload, size_t len);
+    static MessageHandler messageHandler;
 
     bool tryConnect();
     bool isReallyConnected(); // more reliable check

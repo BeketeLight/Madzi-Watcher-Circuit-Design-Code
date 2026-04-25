@@ -1,8 +1,10 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include "config.h"
+#include "customConfig.h"
 #include "actuators/statusled.h"
 #include "actuators/solenoidvalve.h"
 #include "actuators/buzzer.h"
@@ -19,6 +21,7 @@ static WaterQualityController controller(valve);
 static WiFiManager wifiManager;
 static MqttManager mqttManager;
 static Buzzer buzzer(BUZZER_PIN); // Buzzer on pin 8
+static ConfigManager configManager;
 
 // Queue: sensor task → network task
 static QueueHandle_t readingQueue = nullptr;
@@ -30,17 +33,43 @@ static void networkTask(void *pvParameters);
 void setup()
 {
     Serial.begin(115200);
-    delay(1000); // give serial time to settle
+
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
+    if (wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
+    {
+        Serial.println("Woke up from timer");
+    }
+    else
+    {
+        Serial.println("Normal boot");
+    }
+
+    delay(10000); // give serial time to settle
 
     Serial.println("\n=== Madzi Watcher starting ===\n");
 
     // Initialize hardware & classes
     initStatusLED();
-    mqttManager.begin();
+
+    configManager.begin();
+    configManager.load();
+
+    Serial.println(configManager.getConfig().deviceId);
+
     buzzer.begin();
     buzzer.beep(200, 1500); // startup beep
     valve.begin();
     sensors.begin();
+
+    mqttManager.begin();
+    mqttManager.subscribe(MQTT_TOPIC_COMMANDS, MQTT_QOS); // subscribe to commands topic with QoS 1
+    mqttManager.subscribe(MQTT_TOPIC_CONFIG, MQTT_QOS);   // subscribe to config topic with Qo
+    mqttManager.setMessageHandler(
+        [&](const String &topic, const String &message)
+        {
+            controller.handleCommand(topic, message, buzzer, configManager);
+        });
 
     // Create queue (buffer up to 5 readings if network is slow/offline)
     readingQueue = xQueueCreate(5, sizeof(WaterQualityReading));
@@ -107,10 +136,16 @@ static void sensorTask(void *pvParameters)
 
     while (true)
     {
+        if (controller.getState() == SYSTEM_OFF)
+        {
+            // If system is OFF, skip sensor reading and just wait
+            vTaskDelay(frequency);
+            continue;
+        }
         Serial.println("\nReading sensors...");
 
         // Read all sensors
-        WaterQualityReading reading = sensors.readAll();
+        WaterQualityReading reading = sensors.readAll(configManager);
 
         // Process logic → valve, alarms, status LED, etc.
         controller.process(reading, buzzer);
@@ -123,7 +158,7 @@ static void sensorTask(void *pvParameters)
             Serial.println("Warning: reading queue full → dropping oldest");
         }
 
-        // Wait for next cycle (precise timing)
+        // // Wait for next cycle (precise timing)
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -142,6 +177,13 @@ static void networkTask(void *pvParameters)
 
         // Keep MQTT alive / reconnecting / process incoming
         mqttManager.loop();
+
+        if (controller.getState() == SYSTEM_OFF)
+        {
+            // If system is OFF, skip sensor reading and just wait
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
 
         // If we have a new reading in queue → try to publish
         WaterQualityReading reading;

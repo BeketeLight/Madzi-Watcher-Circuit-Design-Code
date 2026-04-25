@@ -5,6 +5,13 @@
 #include <WiFi.h>
 #include "config.h"
 
+MqttManager::MessageHandler MqttManager::messageHandler = nullptr;
+
+void MqttManager::setMessageHandler(MessageHandler handler)
+{
+    messageHandler = handler;
+}
+
 MqttManager::MqttManager()
     : client(espClient)
 {
@@ -60,13 +67,20 @@ void (*MqttManager::messageCallback)(const char *topic, const uint8_t *payload, 
 // Static forwarding callback (required because PubSubClient expects a free function / matching signature)
 void MqttManager::staticCallback(char *topic, uint8_t *payload, unsigned int length)
 {
-    if (messageCallback)
+    String msg;
+
+    for (unsigned int i = 0; i < length; i++)
     {
-        messageCallback(topic, payload, length); // length is unsigned int → safe to pass to size_t
+        msg += (char)payload[i];
     }
-    else
+
+    String topicStr = String(topic);
+
+    Serial.println("MQTT Message: " + msg);
+
+    if (messageHandler)
     {
-        Serial.println("Received MQTT message but no messageCallback set");
+        messageHandler(topicStr, msg);
     }
 }
 
@@ -162,6 +176,12 @@ bool MqttManager::tryConnect()
             Serial.print("→ Other error rc=");
             Serial.println(rc);
         }
+    }
+    else
+    {
+        subscribe(MQTT_TOPIC_COMMANDS, MQTT_QOS); // re-subscribe on reconnect (if needed)
+        subscribe(MQTT_TOPIC_CONFIG, MQTT_QOS);
+        ;
     }
 
     return ok;

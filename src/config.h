@@ -15,6 +15,10 @@ extern const int MQTT_PORT;
 extern const char *MQTT_USER;
 extern const char *MQTT_PASS;
 extern const char *MQTT_TOPIC_SENSOR;
+extern const char *MQTT_TOPIC_COMMANDS;
+extern const char *MQTT_TOPIC_STATUS;
+extern const char *MQTT_TOPIC_CONFIG;
+extern const int MQTT_QOS; // QoS level for publishing (0, 1, or 2)
 
 // ====================== Timing ======================
 extern const unsigned long PUBLISH_INTERVAL_MS;

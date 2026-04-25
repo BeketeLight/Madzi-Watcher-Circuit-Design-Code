@@ -19,14 +19,14 @@ void SensorManager::begin()
     Serial.println("SensorManager initialized. DS18B20 ready.");
 }
 
-WaterQualityReading SensorManager::readAll()
+WaterQualityReading SensorManager::readAll(ConfigManager &config)
 {
     WaterQualityReading r;
 
     // Use strncpy for fixed-size buffers
-    strncpy(r.deviceId, "MADZI_ESP32_T01", sizeof(r.deviceId));
-    strncpy(r.district, "Zomba", sizeof(r.district));
-    strncpy(r.treatmentPlantId, "TP001", sizeof(r.treatmentPlantId));
+    strncpy(r.deviceId, config.getConfig().deviceId, sizeof(r.deviceId));
+    strncpy(r.district, config.getConfig().district, sizeof(r.district));
+    strncpy(r.treatmentPlantId, config.getConfig().treatmentPlantId, sizeof(r.treatmentPlantId));
 
     r.turbidity = readTurbidity(turbidityPin);
     r.pH = readPH(pHPin);

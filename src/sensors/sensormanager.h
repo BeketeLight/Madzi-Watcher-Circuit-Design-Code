@@ -6,12 +6,13 @@
 #include <DallasTemperature.h>
 #include "../data/waterqualityreading.h"
 #include "../config.h"
+#include "../customConfig.h"
 
 class SensorManager
 {
 public:
     SensorManager();
-    WaterQualityReading readAll();
+    WaterQualityReading readAll(ConfigManager &config);
     float readTurbidity(int &turbidityPin);
     float readPH(int &pHPin);
     int readTDS(int &tdsPin);

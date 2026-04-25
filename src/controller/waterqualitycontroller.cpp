@@ -52,3 +52,51 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
         }
     }
 }
+
+void WaterQualityController::handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager)
+{
+    if (topic == "waterquality/commands")
+    {
+        if (message == "poweroff")
+        {
+            Serial.println("Entering deep sleep in 10 seconds...");
+
+            buzzer.alert(); // optional feedback
+
+            delay(500); // let serial + buzzer finish
+
+            //  SET WAKE-UP FIRST
+            esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
+
+            Serial.println("Going to sleep now...");
+            delay(100);
+
+            esp_deep_sleep_start(); //  LAST CALL (never returns)
+        }
+
+        if (message == "turnon")
+        {
+            Serial.println("Turning ON system");
+            state = SYSTEM_ON;
+            buzzer.beep(); // Sound alarm on manual startup
+            _valve.open();
+        }
+        else if (message == "turnoff")
+        {
+            Serial.println("Turning OFF system");
+            state = SYSTEM_OFF;
+            buzzer.beep(); // Sound alarm on manual shutdown
+            _valve.close();
+        }
+    }
+    if (topic == "waterquality/config")
+    {
+        Serial.println("Updating config from MQTT...");
+        configManager.updateFromJson(message);
+    }
+}
+
+SystemState WaterQualityController::getState() const
+{
+    return state;
+}
