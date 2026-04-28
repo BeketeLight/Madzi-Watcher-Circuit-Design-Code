@@ -54,8 +54,8 @@ float SensorManager::readTurbidity(int &turbidityPin)
     // // Read raw ADC value
     // int raw = analogRead(turbidityPin);
     float temperature = readTemperature(); // Get current temperature for compensation
-    Serial.print("Raw temperature reading (mV): ");
-    Serial.println(temperature);
+    // Serial.print("Raw temperature reading (mV): ");
+    // Serial.println(temperature);
 
     uint32_t mV_at_pin = analogReadMilliVolts(turbidityPin); // already calibrated!
     float voltage_at_pin = mV_at_pin / 1000.0;               // e.g. 0.000 – 3.300 V
@@ -69,6 +69,8 @@ float SensorManager::readTurbidity(int &turbidityPin)
 
     // equivalent NTU
     float TU = -865.68 * U_corrected + TURBIDITY_K;
+    Serial.print("TU before clamping: ");
+    Serial.println(TU);
 
     Serial.print("Corrected Voltage: ");
     Serial.println(U_corrected);
@@ -76,8 +78,12 @@ float SensorManager::readTurbidity(int &turbidityPin)
     Serial.print("Equivalent turbidity: ");
 
     // Clamp values
-    if (TU < 0)
+    if (TU < -445.15)
         TU = 0;
+    if (TU > -445.15 && TU < 0)
+        TU = 10;
+    if (TU > 200)
+        TU = 200;
     Serial.println(TU);
 
     return TU;

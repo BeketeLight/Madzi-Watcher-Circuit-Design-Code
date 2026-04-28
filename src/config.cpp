@@ -40,5 +40,5 @@ const float PH_MAX = 8.5;
 const float TURBIDITY_MAX = 50.0;
 const int TDS_MAX = 500;
 const int EC_MAX = 20;
-const float DIVIDER_SCALE = 1;         // To recover real sensor voltage from ADC reading (0-3.3V) to actual sensor output
+const float DIVIDER_SCALE = 1.6667;    // To recover real sensor voltage from ADC reading (0-3.3V) to actual sensor output
 const float TURBIDITY_K = 2714.426208; // Calibration constant for turbidity sensor (to be determined experimentally)
