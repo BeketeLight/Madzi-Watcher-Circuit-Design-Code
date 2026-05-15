@@ -7,34 +7,40 @@ WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(va
 
 void WaterQualityController::process(const WaterQualityReading &reading, Buzzer &buzzer)
 {
+
     bool violation = reading.anomalyDetected;
+    Serial.print("valve current state from controller: ");
+    Serial.println(_valve.isOpen());
 
     if (violation)
     {
         anomalyCount++;
         normalCount = 0;
-
-        Serial.print("Anomaly detected: WQI=");
-        Serial.print(anomalyCount);
+        valveClosed = true;
 
         // Close only after 5 consecutive anomalies
-        if ((anomalyCount >= 5 && !valveClosed) || (valveClosed && anomalyCount >= 5))
+        if ((_valve.isOpen() == 1 && anomalyCount >= 3) || (anomalyCount >= 3))
         {
-            _valve.close();
-            valveClosed = true;
+
+            if (_valve.isOpen() == 1)
+            {
+                _valve.close();
+            }
+
             if (emailsendCount == 0 || emailsendCount == 10)
             {
-                emailsendCount++;
-                emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
+                // emailsendCount++;
+                // emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
             }
             emailsendCount++;
 
-            // buzzer.alert(); // Sound alarm on anomaly
+            buzzer.alert(); // Sound alarm on anomaly
 
-            updateStatusLED(violation);
+            // updateStatusLED(violation);
             Serial.println("ANOMALY DETECTED → Valve CLOSED");
         }
     }
+
     else
     {
         normalCount++;
@@ -79,6 +85,17 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
             Serial.println("Turning ON system");
             state = SYSTEM_ON;
             buzzer.beep(); // Sound alarm on manual startup
+            _valve.open();
+        }
+
+        if (message == "closesolenoidvalve")
+        {
+            Serial.println("Closing solenoid valve");
+            _valve.close();
+        }
+        if (message == "opensolenoidvalve")
+        {
+            Serial.println("Opening solenoid valve");
             _valve.open();
         }
         else if (message == "turnoff")

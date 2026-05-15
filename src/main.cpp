@@ -45,7 +45,7 @@ void setup()
         Serial.println("Normal boot");
     }
 
-    delay(10000); // give serial time to settle
+    delay(8000); // give serial time to settle
 
     Serial.println("\n=== Madzi Watcher starting ===\n");
 

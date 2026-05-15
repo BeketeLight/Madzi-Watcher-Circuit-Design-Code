@@ -82,8 +82,6 @@ float SensorManager::readTurbidity(int &turbidityPin)
         TU = 0;
     if (TU > -445.15 && TU < 0)
         TU = 10;
-    if (TU > 200)
-        TU = 200;
     Serial.println(TU);
 
     return TU;
