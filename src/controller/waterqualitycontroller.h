@@ -8,6 +8,7 @@
 #include "../utils/emailmanager.h"
 #include "../config.h"
 #include "../customConfig.h"
+#include "../utils/mqttmanager.h"
 
 enum SystemState
 {
@@ -21,7 +22,7 @@ class WaterQualityController
 public:
     WaterQualityController(SolenoidValve &valve);
     void process(const WaterQualityReading &reading, Buzzer &buzzer);
-    void handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager);
+    void handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager, MqttManager &mqttManager);
     SystemState getState() const;
 
 private:

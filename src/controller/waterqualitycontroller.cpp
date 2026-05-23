@@ -1,4 +1,5 @@
 #include "waterqualitycontroller.h"
+#include "mqttconfig.h"
 
 WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(valve)
 {
@@ -59,10 +60,24 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
     }
 }
 
-void WaterQualityController::handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager)
+void WaterQualityController::handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager, MqttManager &mqttManager)
 {
     if (topic == "waterquality/commands")
     {
+        if (message == "switchmqttbroker")
+        {
+            Serial.println("Switching MQTT broker...");
+            configManager.getConfig().useLocalMqtt = !configManager.getConfig().useLocalMqtt;
+            configManager.save();
+            Serial.printf("→ New mode: %s\n", configManager.getConfig().useLocalMqtt ? "LOCAL" : "CLOUD");
+            pendingBrokerSwitch = true;
+            // esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
+
+            // Serial.println("Going to sleep now...");
+            // delay(100);
+
+            // esp_deep_sleep_start(); //  LAST CALL (never returns)
+        }
         if (message == "poweroff")
         {
             Serial.println("Entering deep sleep in 10 seconds...");
@@ -90,11 +105,21 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
 
         if (message == "closesolenoidvalve")
         {
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → ignoring solenoid command");
+                return;
+            }
             Serial.println("Closing solenoid valve");
             _valve.close();
         }
         if (message == "opensolenoidvalve")
         {
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → ignoring solenoid command");
+                return;
+            }
             Serial.println("Opening solenoid valve");
             _valve.open();
         }

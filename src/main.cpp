@@ -13,6 +13,7 @@
 #include "controller/waterqualitycontroller.h"
 #include "utils/mqttmanager.h"
 #include "utils/wifimanager.h"
+#include "mqttconfig.h"
 
 // Global objects
 static SensorManager sensors;
@@ -21,7 +22,7 @@ static WaterQualityController controller(valve);
 static WiFiManager wifiManager;
 static MqttManager mqttManager;
 static Buzzer buzzer(BUZZER_PIN); // Buzzer on pin 8
-static ConfigManager configManager;
+// static ConfigManager configManager;
 
 // Queue: sensor task → network task
 static QueueHandle_t readingQueue = nullptr;
@@ -53,12 +54,15 @@ void setup()
     initStatusLED();
 
     configManager.begin();
-    configManager.load();
-
+    // configManager.load();    // No need to load here since begin() already handles it (creates with defaults if not exists)
+    Serial.println("Current config:");
     Serial.println(configManager.getConfig().deviceId);
+    Serial.println(configManager.getConfig().district);
+
+    // Serial.println(configManager.getConfig().deviceId);
 
     buzzer.begin();
-    buzzer.beep(200, 1500); // startup beep
+    // buzzer.beep(200, 1500); // startup beep
     valve.begin();
     sensors.begin();
 
@@ -68,7 +72,7 @@ void setup()
     mqttManager.setMessageHandler(
         [&](const String &topic, const String &message)
         {
-            controller.handleCommand(topic, message, buzzer, configManager);
+            controller.handleCommand(topic, message, buzzer, configManager, mqttManager);
         });
 
     // Create queue (buffer up to 5 readings if network is slow/offline)
