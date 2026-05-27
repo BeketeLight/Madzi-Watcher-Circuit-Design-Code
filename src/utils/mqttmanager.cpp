@@ -262,7 +262,7 @@ bool MqttManager::publish(const WaterQualityReading &data)
         return false;
     }
 
-    bool success = client.publish(MQTT_TOPIC_SENSOR, jsonBuffer, len);
+    bool success = client.publish(MQTT_TOPIC_SENSOR, (const uint8_t *)jsonBuffer, len, true); // retain=true for latest state (optional)
 
     // if (!success)
     // {

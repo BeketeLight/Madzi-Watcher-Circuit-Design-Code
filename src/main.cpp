@@ -62,7 +62,7 @@ void setup()
     // Serial.println(configManager.getConfig().deviceId);
 
     buzzer.begin();
-    // buzzer.beep(200, 1500); // startup beep
+    buzzer.beep(200, 1500); // startup beep
     valve.begin();
     sensors.begin();
 

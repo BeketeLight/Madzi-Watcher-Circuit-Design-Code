@@ -11,5 +11,5 @@ const char *MQTT_TOPIC_SENSOR = "waterquality/sensor";
 const char *MQTT_TOPIC_COMMANDS = "waterquality/commands";
 const char *MQTT_TOPIC_STATUS = "waterquality/status";
 const char *MQTT_TOPIC_CONFIG = "waterquality/config";
-const int MQTT_QOS = 1;           // QoS level for publishing (0, 1, or 2)
+const int MQTT_QOS = 0;           // QoS level for publishing (0, 1, or 2)
 bool pendingBrokerSwitch = false; // Flag to indicate pending MQTT broker switch

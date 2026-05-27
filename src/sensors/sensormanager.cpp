@@ -80,7 +80,7 @@ float SensorManager::readTurbidity(int &turbidityPin)
     // Clamp values
     if (TU < -445.15)
         TU = 0;
-    if (TU > -445.15 && TU < 0)
+    if (TU > -345.15 && TU < 0)
         TU = 10;
     Serial.println(TU);
 

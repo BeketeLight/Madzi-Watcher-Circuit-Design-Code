@@ -26,6 +26,7 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
             if (_valve.isOpen() == 1)
             {
                 _valve.close();
+                valveState = VALVE_CLOSED_ANOMALY;
             }
 
             if (emailsendCount == 0 || emailsendCount == 10)
@@ -51,8 +52,28 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
         // Reopen only after 5 consecutive NORMAL readings
         if (normalCount >= 5 && valveClosed)
         {
-            _valve.open();
-            valveClosed = false;
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → not reopening valve");
+                return;
+            }
+            else if (getvalveState() == VALVE_CLOSED_MANUAL)
+            {
+                Serial.println("Valve manually closed → not reopening");
+                return;
+            }
+
+            else if (getvalveState() == VALVE_CLOSED_ANOMALY)
+            {
+                _valve.open();
+                valveClosed = false;
+                valveState = VALVE_OPEN_NORMAL;
+            }
+            else
+            {
+                Serial.println("Valve already open → no action needed");
+            }
+            // _valve.open();
 
             updateStatusLED(violation);
             Serial.println("SYSTEM NORMAL → Valve OPENED");
@@ -112,6 +133,7 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
             }
             Serial.println("Closing solenoid valve");
             _valve.close();
+            valveState = VALVE_CLOSED_MANUAL;
         }
         if (message == "opensolenoidvalve")
         {
@@ -122,6 +144,7 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
             }
             Serial.println("Opening solenoid valve");
             _valve.open();
+            valveState = VALVE_OPEN_NORMAL;
         }
         else if (message == "turnoff")
         {
@@ -141,4 +164,8 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
 SystemState WaterQualityController::getState() const
 {
     return state;
+}
+ValveState WaterQualityController::getvalveState() const
+{
+    return valveState;
 }
