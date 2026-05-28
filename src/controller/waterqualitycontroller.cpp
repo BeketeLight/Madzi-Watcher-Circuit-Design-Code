@@ -1,4 +1,5 @@
 #include "waterqualitycontroller.h"
+#include "mqttconfig.h"
 
 WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(valve)
 {
@@ -7,34 +8,41 @@ WaterQualityController::WaterQualityController(SolenoidValve &valve) : _valve(va
 
 void WaterQualityController::process(const WaterQualityReading &reading, Buzzer &buzzer)
 {
+
     bool violation = reading.anomalyDetected;
+    Serial.print("valve current state from controller: ");
+    Serial.println(_valve.isOpen());
 
     if (violation)
     {
         anomalyCount++;
         normalCount = 0;
-
-        Serial.print("Anomaly detected: WQI=");
-        Serial.print(anomalyCount);
+        valveClosed = true;
 
         // Close only after 5 consecutive anomalies
-        if ((anomalyCount >= 5 && !valveClosed) || (valveClosed && anomalyCount >= 5))
+        if ((_valve.isOpen() == 1 && anomalyCount >= 3) || (anomalyCount >= 3))
         {
-            _valve.close();
-            valveClosed = true;
+
+            if (_valve.isOpen() == 1)
+            {
+                _valve.close();
+                valveState = VALVE_CLOSED_ANOMALY;
+            }
+
             if (emailsendCount == 0 || emailsendCount == 10)
             {
-                emailsendCount++;
-                emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
+                // emailsendCount++;
+                // emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
             }
             emailsendCount++;
 
-            // buzzer.alert(); // Sound alarm on anomaly
+            buzzer.alert(); // Sound alarm on anomaly
 
-            updateStatusLED(violation);
+            // updateStatusLED(violation);
             Serial.println("ANOMALY DETECTED → Valve CLOSED");
         }
     }
+
     else
     {
         normalCount++;
@@ -44,8 +52,28 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
         // Reopen only after 5 consecutive NORMAL readings
         if (normalCount >= 5 && valveClosed)
         {
-            _valve.open();
-            valveClosed = false;
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → not reopening valve");
+                return;
+            }
+            else if (getvalveState() == VALVE_CLOSED_MANUAL)
+            {
+                Serial.println("Valve manually closed → not reopening");
+                return;
+            }
+
+            else if (getvalveState() == VALVE_CLOSED_ANOMALY)
+            {
+                _valve.open();
+                valveClosed = false;
+                valveState = VALVE_OPEN_NORMAL;
+            }
+            else
+            {
+                Serial.println("Valve already open → no action needed");
+            }
+            // _valve.open();
 
             updateStatusLED(violation);
             Serial.println("SYSTEM NORMAL → Valve OPENED");
@@ -53,10 +81,24 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
     }
 }
 
-void WaterQualityController::handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager)
+void WaterQualityController::handleCommand(const String &topic, const String &message, Buzzer &buzzer, ConfigManager &configManager, MqttManager &mqttManager)
 {
     if (topic == "waterquality/commands")
     {
+        if (message == "switchmqttbroker")
+        {
+            Serial.println("Switching MQTT broker...");
+            configManager.getConfig().useLocalMqtt = !configManager.getConfig().useLocalMqtt;
+            configManager.save();
+            Serial.printf("→ New mode: %s\n", configManager.getConfig().useLocalMqtt ? "LOCAL" : "CLOUD");
+            pendingBrokerSwitch = true;
+            // esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 seconds
+
+            // Serial.println("Going to sleep now...");
+            // delay(100);
+
+            // esp_deep_sleep_start(); //  LAST CALL (never returns)
+        }
         if (message == "poweroff")
         {
             Serial.println("Entering deep sleep in 10 seconds...");
@@ -81,6 +123,29 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
             buzzer.beep(); // Sound alarm on manual startup
             _valve.open();
         }
+
+        if (message == "closesolenoidvalve")
+        {
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → ignoring solenoid command");
+                return;
+            }
+            Serial.println("Closing solenoid valve");
+            _valve.close();
+            valveState = VALVE_CLOSED_MANUAL;
+        }
+        if (message == "opensolenoidvalve")
+        {
+            if (getState() == SYSTEM_OFF)
+            {
+                Serial.println("System is OFF → ignoring solenoid command");
+                return;
+            }
+            Serial.println("Opening solenoid valve");
+            _valve.open();
+            valveState = VALVE_OPEN_NORMAL;
+        }
         else if (message == "turnoff")
         {
             Serial.println("Turning OFF system");
@@ -99,4 +164,8 @@ void WaterQualityController::handleCommand(const String &topic, const String &me
 SystemState WaterQualityController::getState() const
 {
     return state;
+}
+ValveState WaterQualityController::getvalveState() const
+{
+    return valveState;
 }

@@ -1,9 +1,10 @@
 #ifndef SOLENOIDVALVE_H
 #define SOLENOIDVALVE_H
 
-class SolenoidValve{
-    
-public: 
+class SolenoidValve
+{
+
+public:
     SolenoidValve(int pin);
     void begin();
     void open();
@@ -11,7 +12,7 @@ public:
     bool isOpen() const;
 
 private:
-    int _pin = 6;
+    int _pin = 12;
     bool _state;
 };
 #endif // SOLENOIDVALVE_H

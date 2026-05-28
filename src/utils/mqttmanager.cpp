@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include "config.h"
+#include "mqttconfig.h"
 
 MqttManager::MessageHandler MqttManager::messageHandler = nullptr;
 
@@ -27,14 +28,30 @@ MqttManager::~MqttManager()
 
 bool MqttManager::begin()
 {
-    // espClient.setInsecure(); // ← only if you don't want to verify cert (not recommended long-term)
-    // espClient.setCACert( hivemq_ca_cert );   // ← better: add proper CA cert from HiveMQ docs
+    DeviceConfig &cfg = configManager.getConfig();
 
-    client.setServer(MQTT_SERVER, MQTT_PORT);
+    const char *server = cfg.useLocalMqtt ? cfg.mqttLocalServer : cfg.mqttCloudServer;
+    int port = cfg.useLocalMqtt ? cfg.mqttLocalPort : cfg.mqttCloudPort;
+
+    Serial.printf("MQTT Target: %s:%d (%s)\n", server, port, cfg.useLocalMqtt ? "LOCAL" : "CLOUD");
+
+    if (cfg.useLocalMqtt)
+    {
+        // Local broker - no TLS
+        client.setClient(espClient);
+    }
+    else
+    {
+        // Cloud broker - TLS required
+        client.setClient(secureClient);
+        secureClient.setInsecure(); // Quick fix (not recommended for production)
+        // secureClient.setCACert(hivemq_root_ca);  // Better: use proper CA cert later
+    }
+
+    client.setServer(server, port);
     client.setKeepAlive(60);
-    client.setBufferSize(512); // increase if your JSON is large
-
     client.setBufferSize(512);
+    client.setSocketTimeout(10);
     client.setCallback(MqttManager::staticCallback);
 
     return tryConnect();
@@ -92,6 +109,25 @@ void MqttManager::setMessageCallback(void (*cb)(const char *topic, const uint8_t
 void MqttManager::loop()
 {
     unsigned long now = millis();
+
+    // Handle pending broker switch
+    if (pendingBrokerSwitch)
+    {
+        pendingBrokerSwitch = false;
+        Serial.println("Performing broker switch...");
+
+        if (client.connected())
+            client.disconnect();
+
+        delay(500); // Small safe delay
+
+        bool success = begin(); // Re-init with new config
+
+        if (success)
+            Serial.println("Successfully switched and connected to new broker");
+        else
+            Serial.println("Switch completed but connection failed (will retry)");
+    }
 
     if (client.connected())
     {
@@ -226,7 +262,7 @@ bool MqttManager::publish(const WaterQualityReading &data)
         return false;
     }
 
-    bool success = client.publish(MQTT_TOPIC_SENSOR, jsonBuffer, len);
+    bool success = client.publish(MQTT_TOPIC_SENSOR, (const uint8_t *)jsonBuffer, len, true); // retain=true for latest state (optional)
 
     // if (!success)
     // {
@@ -238,4 +274,13 @@ bool MqttManager::publish(const WaterQualityReading &data)
     // }
 
     return success;
+}
+
+void MqttManager::disconnect()
+{
+    if (client.connected())
+    {
+        client.disconnect();
+        Serial.println("MQTT disconnected for broker switch");
+    }
 }

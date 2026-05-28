@@ -3,21 +3,28 @@
 
 SolenoidValve::SolenoidValve(int pin) : _pin(pin), _state(false) {}
 
-void SolenoidValve::begin() {
+void SolenoidValve::begin()
+{
     pinMode(_pin, OUTPUT);
-    open(); 
+    open();
+    Serial.println("valved initialised");
 }
 
-void SolenoidValve::open() {
+void SolenoidValve::close()
+{
     digitalWrite(_pin, HIGH);
-    _state = true;
-}
-
-void SolenoidValve::close() {
-    digitalWrite(_pin, LOW);
     _state = false;
+    Serial.println("Valve Closed");
 }
 
-bool SolenoidValve::isOpen() const {
+void SolenoidValve::open()
+{
+    digitalWrite(_pin, LOW);
+    _state = true;
+    Serial.println("Valve Opened");
+}
+
+bool SolenoidValve::isOpen() const
+{
     return _state;
 }

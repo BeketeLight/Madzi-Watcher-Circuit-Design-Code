@@ -1,19 +1,10 @@
 #include "config.h"
 
+ConfigManager configManager;
+
 // ====================== WiFi ======================
 const char *WIFI_SSID = "Light";    // ← CHANGE THIS
 const char *WIFI_PASS = "99997014"; // ← CHANGE THIS
-
-// ====================== MQTT ======================
-const char *MQTT_SERVER = "192.168.43.82"; //"c73a854202c347a9bda6c26b8cc5a443.s1.eu.hivemq.cloud";
-const int MQTT_PORT = 1883;                // 8883;
-const char *MQTT_USER = "madziwatcher";
-const char *MQTT_PASS = "madziWatcher001";
-const char *MQTT_TOPIC_SENSOR = "waterquality/sensor";
-const char *MQTT_TOPIC_COMMANDS = "waterquality/commands";
-const char *MQTT_TOPIC_STATUS = "waterquality/status";
-const char *MQTT_TOPIC_CONFIG = "waterquality/config";
-const int MQTT_QOS = 1; // QoS level for publishing (0, 1, or 2)
 
 // ====================== Timing ======================
 const unsigned long PUBLISH_INTERVAL_MS = 5000;

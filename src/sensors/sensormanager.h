@@ -23,11 +23,11 @@ public:
     void begin();
 
 private:
-    int turbidityPin = 4; // ADC1_3
-    int pHPin = 5;        // ADC1_4
-    int tdsPin = 6;       // ADC1_5
-    int ecPin = 15;       // ADC1_6
-    int tempPinDS18B20 = 7;
+    int turbidityPin = 4;   // ADC1_3
+    int pHPin = 5;          // ADC1_4
+    int tdsPin = 6;         // ADC1_5
+    int ecPin = 15;         // ADC1_6
+    int tempPinDS18B20 = 7; // GPIO37 (input only, suitable for OneWire)
 
     OneWire oneWire;
     DallasTemperature sensors;

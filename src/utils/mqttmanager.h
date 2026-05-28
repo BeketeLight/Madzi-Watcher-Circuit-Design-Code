@@ -4,7 +4,7 @@
 
 #include <PubSubClient.h>
 #include <WiFi.h>
-// #include <WiFiClientSecure.h> // assuming you're using secure connection to HiveMQ Cloud
+#include <WiFiClientSecure.h> // assuming you're using secure connection to HiveMQ Cloud
 #include "data/waterqualityreading.h"
 
 class MqttManager
@@ -19,8 +19,10 @@ public:
     bool publish(const WaterQualityReading &data);
     bool subscribe(const char *topic, uint8_t qos = 0);
     void setMessageHandler(MessageHandler handler);
+    void disconnect();
 
 private:
+    WiFiClientSecure secureClient;
     WiFiClient espClient; // secure client for port 8883
     PubSubClient client;
 
