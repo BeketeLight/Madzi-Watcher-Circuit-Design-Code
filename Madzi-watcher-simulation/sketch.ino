@@ -22,10 +22,10 @@ void loop() {
   int rawEC   = analogRead(ecPin);   // Pot4
 
   // ==================== CONVERT TO SENSOR VALUES ====================
-  float turbidity = map(rawTurb, 0, 4095, 0, 100);
+   float turbidity = map(rawTurb, 0, 4095, 0, 10);
   float pH        = 4.0 + (rawPH * 10.0 / 4095.0);
   float tds       = map(rawTDS, 0, 4095, 0, 1000);
-  float ec        = map(rawEC, 0, 4095, 0, 1500) / 10.0;
+  float ec        = map(rawEC, 0, 4095, 0, 1500);
 
   // Clamp values
   turbidity = constrain(turbidity, 0.0, 100.0);
@@ -38,17 +38,23 @@ void loop() {
 
   // ==================== CHECK VIOLATIONS ====================
   bool pH_Violated = (pH < 6.5 || pH > 8.5);
-  bool WQI_Violated = (wqi > 70);        // Poor or Very Poor
+  bool WQI_Violated = (wqi > 50);        // Poor or Very Poor
+
+  bool turbidity_Violated = (turbidity > 5);
+  bool electricalC_Violated = (ec > 1000);
+  bool tds_Violated = (tds > 600);    // Poor or Very Poor
 
   // ==================== PRINT RESULTS ====================
-  Serial.println("\n--- Water Quality Parameters ---");
+   Serial.println("\n--- Water Quality Parameters ---");
   Serial.print("Turbidity : "); Serial.print(turbidity, 1); Serial.println(" NTU");
+    Serial.print("   ("); Serial.print(turbidity_Violated ? "VIOLATED" : "OK"); Serial.println(")");
   Serial.print("pH        : "); Serial.print(pH, 2);
   Serial.print("   ("); Serial.print(pH_Violated ? "VIOLATED" : "OK"); Serial.println(")");
   
-  Serial.print("TDS       : "); Serial.print(tds); Serial.println(" ppm");
+  Serial.print("TDS       : "); Serial.print(tds, 2); Serial.println(" ppm");
+    Serial.print("   ("); Serial.print(tds_Violated ? "VIOLATED" : "OK"); Serial.println(")");
   Serial.print("EC        : "); Serial.print(ec, 1); Serial.println(" µS/cm");
-  
+  Serial.print("   ("); Serial.print(electricalC_Violated ? "VIOLATED" : "OK"); Serial.println(")");
   Serial.print("WQI       : "); Serial.print(wqi, 2);
   
   if (wqi <= 25) {
@@ -64,8 +70,8 @@ void loop() {
   }
 
   // ==================== BUZZER ALERT ====================
-  if (pH_Violated || WQI_Violated) {
-    alertBuzzer(pH_Violated, WQI_Violated);
+  if (pH_Violated || WQI_Violated || turbidity_Violated || tds_Violated) {
+    alertBuzzer(pH_Violated,turbidity_Violated,tds_Violated, WQI_Violated);
   } else {
     digitalWrite(buzzerPin, LOW);   // Turn off buzzer
   }
@@ -74,8 +80,8 @@ void loop() {
 }
 
 // ==================== BUZZER ALERT FUNCTION ====================
-void alertBuzzer(bool pH_Violated, bool WQI_Violated) {
-  if (pH_Violated && WQI_Violated) {
+void alertBuzzer(bool pH_Violated,bool turbidity_Violated,bool tds_Violated, bool WQI_Violated) {
+  if (pH_Violated || WQI_Violated || turbidity_Violated || tds_Violated ) {
     // Both violated → Fast continuous beep
     tone(buzzerPin, 1500, 300);
     delay(400);
