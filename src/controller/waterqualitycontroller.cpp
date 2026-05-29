@@ -20,7 +20,7 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
         valveClosed = true;
 
         // Close only after 5 consecutive anomalies
-        if ((_valve.isOpen() == 1 && anomalyCount >= 3) || (anomalyCount >= 3))
+        if ((_valve.isOpen() == 1 && anomalyCount >= 2) || (anomalyCount >= 2))
         {
 
             if (_valve.isOpen() == 1)
@@ -31,8 +31,8 @@ void WaterQualityController::process(const WaterQualityReading &reading, Buzzer 
 
             if (emailsendCount == 0 || emailsendCount == 10)
             {
-                // emailsendCount++;
-                // emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
+                emailsendCount++;
+                emailManager.sendAlert("Water Quality Alert", "Warning: Anomaly detected in water quality readings. Immediate attention required.   Device ID: " + String(reading.deviceId) + "\nDistrict: " + String(reading.district) + "\nTreatment Plant: " + String(reading.treatmentPlantId) + "\nTurbidity: " + String(reading.turbidity) + "\npH: " + String(reading.pH) + "\nTDS: " + String(reading.tds) + "\nEC: " + String(reading.electricalConductivity) + "\nWQI: " + String(reading.waterQualityIndex));
             }
             emailsendCount++;
 
